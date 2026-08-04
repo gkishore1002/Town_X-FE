@@ -101,7 +101,7 @@ export default function StoryUploadModal({ isOpen, onClose, onSuccess }) {
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm px-3 md:px-4"
+          className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm px-2 sm:px-3 md:px-4 safe-bottom"
           onClick={handleClose}
           variants={backdropVariants}
           initial="hidden"
@@ -109,7 +109,7 @@ export default function StoryUploadModal({ isOpen, onClose, onSuccess }) {
           exit="exit"
         >
           <motion.div
-            className="bg-white rounded-card shadow-soft-lg w-full max-w-sm md:max-w-md max-h-[90vh] overflow-y-auto border border-brand-100"
+            className="bg-white rounded-t-2xl sm:rounded-card shadow-soft-lg w-full max-w-sm md:max-w-md max-h-[92dvh] overflow-y-auto border border-brand-100"
             onClick={(e) => e.stopPropagation()}
             variants={modalVariants}
           >

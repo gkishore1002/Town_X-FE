@@ -6,10 +6,12 @@ import {
   ChevronLeft, ChevronRight, User, Shield, Clock, IndianRupee, X
 } from 'lucide-react';
 import { propertyAPI } from '../services/api';
+import TownLoader from "@/components/shared/TownLoader";
 import { EMICalculator } from './EMICalculator';
+import { getApiErrorMessage } from '@/lib/apiErrors';
+import LoadErrorState from "@/components/shared/LoadErrorState";
 
-const APP_LOGO_SRC = "/logo.png";
-const APP_NAME = "Town Exchange";
+import { TownExchangeBrand } from './brand/TownExchangeLogo';
 
 export default function PropertyDetails() {
   const { id } = useParams();
@@ -19,6 +21,7 @@ export default function PropertyDetails() {
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [errorCause, setErrorCause] = useState(null);
   const [showComingSoon, setShowComingSoon] = useState(false);
 
   useEffect(() => {
@@ -28,12 +31,14 @@ export default function PropertyDetails() {
   const fetchPropertyDetails = async () => {
     setLoading(true);
     setError(null);
+    setErrorCause(null);
     try {
       const data = await propertyAPI.getPropertyById(id);
       setProperty(data);
     } catch (err) {
-      setError('Failed to load property details');
-      console.error('Error:', err);
+      setError(getApiErrorMessage(err, 'Could not load this property. Please try again.'));
+      setErrorCause(err);
+      console.error('Error loading property:', err);
     } finally {
       setLoading(false);
     }
@@ -60,7 +65,7 @@ export default function PropertyDetails() {
       }));
     } catch (err) {
       console.error('Error toggling favourite:', err);
-      alert('Failed to update favourite. Please try again.');
+      alert(getApiErrorMessage(err, 'Failed to update favourite. Please try again.'));
     }
   };
 
@@ -94,11 +99,8 @@ export default function PropertyDetails() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600 mx-auto"></div>
-          <p className="text-gray-600 mt-4 text-sm">Loading property details...</p>
-        </div>
+      <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+        <TownLoader size="lg" label="Loading property" minHeight="100vh" />
       </div>
     );
   }
@@ -106,26 +108,35 @@ export default function PropertyDetails() {
   if (error || !property) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <p className="text-red-600 text-base font-medium mb-3">{error || 'Property not found'}</p>
-          <button
-            onClick={() => navigate(-1)}
-            className="px-6 py-2.5 bg-brand-500 text-white rounded-control hover:bg-brand-700 font-medium text-sm transition-colors"
-          >
-            Go Back
-          </button>
-        </div>
+        {error ? (
+          <LoadErrorState
+            title="Couldn't load property"
+            message={error}
+            error={errorCause}
+            onRetry={fetchPropertyDetails}
+          />
+        ) : (
+          <div className="text-center">
+            <p className="text-gray-700 text-base font-medium mb-3">Property not found</p>
+            <button
+              onClick={() => navigate(-1)}
+              className="px-6 py-2.5 bg-brand-500 text-white rounded-control hover:bg-brand-700 font-medium text-sm transition-colors"
+            >
+              Go Back
+            </button>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       {/* Professional Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-soft-sm">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-soft-sm safe-top">
         <div className="px-4 py-3 max-w-7xl mx-auto">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between gap-2 min-w-0">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
               <button
                 onClick={() => navigate(-1)}
                 className="md:hidden p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
@@ -133,24 +144,13 @@ export default function PropertyDetails() {
                 <ChevronLeft size={24} className="text-gray-700" />
               </button>
 
-              <button
+              <TownExchangeBrand
+                asButton
+                logoSize={36}
+                showTagline
+                tagline="Property Details"
                 onClick={() => navigate('/')}
-                className="flex items-center gap-2.5 hover:opacity-85 transition-opacity"
-              >
-                <img
-                  src={APP_LOGO_SRC}
-                  alt={APP_NAME}
-                  className="h-9 w-9 rounded-lg object-contain bg-white shadow-soft-sm border border-gray-200"
-                />
-                <div className="flex flex-col">
-                  <span className="text-base font-semibold text-gray-900 leading-tight">
-                    {APP_NAME}
-                  </span>
-                  <span className="text-xs text-gray-500 leading-tight hidden sm:block">
-                    Property Details
-                  </span>
-                </div>
-              </button>
+              />
             </div>
 
             <button
@@ -327,7 +327,7 @@ export default function PropertyDetails() {
             <div className="bg-white rounded-card shadow-soft-sm border border-gray-100 p-5 md:p-6 hover:shadow-soft-md transition-shadow">
               <h3 className="text-lg md:text-xl font-semibold text-gray-800 mb-4">Property Overview</h3>
 
-              <div className="grid grid-cols-3 md:grid-cols-4 gap-3 md:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-4">
                 {property.bhk_type && property.bhk_type.split(' ')[0] !== 'Studio' && (
                   <div className="text-center p-3 md:p-4 bg-gray-50 rounded-control hover:bg-brand-50 hover:shadow-soft-sm transition-all">
                     <Bed className="mx-auto mb-2 text-brand-600" size={28} />
@@ -378,71 +378,71 @@ export default function PropertyDetails() {
               <h3 className="text-lg md:text-xl font-semibold text-gray-800 mb-4">Property Details</h3>
               <div className="space-y-3">
                 {property.property_type && (
-                  <div className="flex justify-between py-2.5 border-b border-gray-100 hover:bg-gray-50 px-2 rounded transition-colors">
-                    <span className="text-gray-600 text-sm md:text-base">Property Type</span>
-                    <span className="font-semibold text-gray-900 text-sm md:text-base">{property.property_type}</span>
+                  <div className="flex justify-between gap-3 py-2.5 border-b border-gray-100 hover:bg-gray-50 px-2 rounded transition-colors">
+                    <span className="text-gray-600 text-sm md:text-base shrink-0">Property Type</span>
+                    <span className="font-semibold text-gray-900 text-sm md:text-base text-right break-words min-w-0 max-w-[58%]">{property.property_type}</span>
                   </div>
                 )}
                 {property.apartment_name && (
-                  <div className="flex justify-between py-2.5 border-b border-gray-100 hover:bg-gray-50 px-2 rounded transition-colors">
-                    <span className="text-gray-600 text-sm md:text-base">Apartment Name</span>
-                    <span className="font-semibold text-gray-900 text-sm md:text-base">{property.apartment_name}</span>
+                  <div className="flex justify-between gap-3 py-2.5 border-b border-gray-100 hover:bg-gray-50 px-2 rounded transition-colors">
+                    <span className="text-gray-600 text-sm md:text-base shrink-0">Apartment Name</span>
+                    <span className="font-semibold text-gray-900 text-sm md:text-base text-right break-words min-w-0 max-w-[58%]">{property.apartment_name}</span>
                   </div>
                 )}
                 {property.carpet_area && property.carpet_area > 0 && (
-                  <div className="flex justify-between py-2.5 border-b border-gray-100 hover:bg-gray-50 px-2 rounded transition-colors">
-                    <span className="text-gray-600 text-sm md:text-base">Carpet Area</span>
-                    <span className="font-semibold text-gray-900 text-sm md:text-base">{property.carpet_area} sq.ft</span>
+                  <div className="flex justify-between gap-3 py-2.5 border-b border-gray-100 hover:bg-gray-50 px-2 rounded transition-colors">
+                    <span className="text-gray-600 text-sm md:text-base shrink-0">Carpet Area</span>
+                    <span className="font-semibold text-gray-900 text-sm md:text-base text-right break-words min-w-0 max-w-[58%]">{property.carpet_area} sq.ft</span>
                   </div>
                 )}
-                <div className="flex justify-between py-2.5 border-b border-gray-100 hover:bg-gray-50 px-2 rounded transition-colors">
-                  <span className="text-gray-600 text-sm md:text-base">Built-up Area</span>
-                  <span className="font-semibold text-gray-900 text-sm md:text-base">
+                <div className="flex justify-between gap-3 py-2.5 border-b border-gray-100 hover:bg-gray-50 px-2 rounded transition-colors">
+                  <span className="text-gray-600 text-sm md:text-base shrink-0">Built-up Area</span>
+                  <span className="font-semibold text-gray-900 text-sm md:text-base text-right break-words min-w-0 max-w-[58%]">
                     {property.built_up_area && property.built_up_area > 0
                       ? `${property.built_up_area} sq.ft`
                       : 'Not mentioned'}
                   </span>
                 </div>
                 {property.bathrooms !== undefined && property.bathrooms > 0 && (
-                  <div className="flex justify-between py-2.5 border-b border-gray-100 hover:bg-gray-50 px-2 rounded transition-colors">
-                    <span className="text-gray-600 text-sm md:text-base">Bathrooms</span>
-                    <span className="font-semibold text-gray-900 text-sm md:text-base">{property.bathrooms}</span>
+                  <div className="flex justify-between gap-3 py-2.5 border-b border-gray-100 hover:bg-gray-50 px-2 rounded transition-colors">
+                    <span className="text-gray-600 text-sm md:text-base shrink-0">Bathrooms</span>
+                    <span className="font-semibold text-gray-900 text-sm md:text-base text-right break-words min-w-0 max-w-[58%]">{property.bathrooms}</span>
                   </div>
                 )}
                 {property.balconies !== undefined && property.balconies > 0 && (
-                  <div className="flex justify-between py-2.5 border-b border-gray-100 hover:bg-gray-50 px-2 rounded transition-colors">
-                    <span className="text-gray-600 text-sm md:text-base">Balconies</span>
-                    <span className="font-semibold text-gray-900 text-sm md:text-base">{property.balconies}</span>
+                  <div className="flex justify-between gap-3 py-2.5 border-b border-gray-100 hover:bg-gray-50 px-2 rounded transition-colors">
+                    <span className="text-gray-600 text-sm md:text-base shrink-0">Balconies</span>
+                    <span className="font-semibold text-gray-900 text-sm md:text-base text-right break-words min-w-0 max-w-[58%]">{property.balconies}</span>
                   </div>
                 )}
                 {property.parking !== undefined && property.parking > 0 && (
-                  <div className="flex justify-between py-2.5 border-b border-gray-100 hover:bg-gray-50 px-2 rounded transition-colors">
-                    <span className="text-gray-600 text-sm md:text-base">Parking</span>
-                    <span className="font-semibold text-gray-900 text-sm md:text-base">{property.parking}</span>
+                  <div className="flex justify-between gap-3 py-2.5 border-b border-gray-100 hover:bg-gray-50 px-2 rounded transition-colors">
+                    <span className="text-gray-600 text-sm md:text-base shrink-0">Parking</span>
+                    <span className="font-semibold text-gray-900 text-sm md:text-base text-right break-words min-w-0 max-w-[58%]">{property.parking}</span>
                   </div>
                 )}
                 {property.floor && property.total_floors && (
-                  <div className="flex justify-between py-2.5 border-b border-gray-100 hover:bg-gray-50 px-2 rounded transition-colors">
-                    <span className="text-gray-600 text-sm md:text-base">Floor</span>
-                    <span className="font-semibold text-gray-900 text-sm md:text-base">{property.floor} of {property.total_floors}</span>
+                  <div className="flex justify-between gap-3 py-2.5 border-b border-gray-100 hover:bg-gray-50 px-2 rounded transition-colors">
+                    <span className="text-gray-600 text-sm md:text-base shrink-0">Floor</span>
+                    <span className="font-semibold text-gray-900 text-sm md:text-base text-right break-words min-w-0 max-w-[58%]">{property.floor} of {property.total_floors}</span>
                   </div>
                 )}
                 {property.property_age && (
-                  <div className="flex justify-between py-2.5 border-b border-gray-100 hover:bg-gray-50 px-2 rounded transition-colors">
-                    <span className="text-gray-600 text-sm md:text-base">Property Age</span>
-                    <span className="font-semibold text-gray-900 text-sm md:text-base">{property.property_age}</span>
+                  <div className="flex justify-between gap-3 py-2.5 border-b border-gray-100 hover:bg-gray-50 px-2 rounded transition-colors">
+                    <span className="text-gray-600 text-sm md:text-base shrink-0">Property Age</span>
+                    <span className="font-semibold text-gray-900 text-sm md:text-base text-right break-words min-w-0 max-w-[58%]">{property.property_age}</span>
                   </div>
                 )}
                 {property.furnishing_status && (
-                  <div className="flex justify-between py-2.5 border-b border-gray-100 hover:bg-gray-50 px-2 rounded transition-colors">
-                    <span className="text-gray-600 text-sm md:text-base">Furnishing Status</span>
-                    <span className="font-semibold text-gray-900 text-sm md:text-base">{property.furnishing_status}</span>
+                  <div className="flex justify-between gap-3 py-2.5 border-b border-gray-100 hover:bg-gray-50 px-2 rounded transition-colors">
+                    <span className="text-gray-600 text-sm md:text-base shrink-0">Furnishing Status</span>
+                    <span className="font-semibold text-gray-900 text-sm md:text-base text-right break-words min-w-0 max-w-[58%]">{property.furnishing_status}</span>
                   </div>
                 )}
                 {property.available_from && (
-                  <div className="flex justify-between py-2.5 hover:bg-gray-50 px-2 rounded transition-colors">
-                    <span className="text-gray-600 text-sm md:text-base">Available From</span>
-                    <span className="font-semibold text-gray-900 text-sm md:text-base">
+                  <div className="flex justify-between gap-3 py-2.5 hover:bg-gray-50 px-2 rounded transition-colors">
+                    <span className="text-gray-600 text-sm md:text-base shrink-0">Available From</span>
+                    <span className="font-semibold text-gray-900 text-sm md:text-base text-right break-words min-w-0 max-w-[58%]">
                       {new Date(property.available_from).toLocaleDateString('en-IN', {
                         day: 'numeric',
                         month: 'short',
@@ -565,7 +565,7 @@ export default function PropertyDetails() {
       </div>
 
       {/* Bottom Action Bar - Mobile Only */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 shadow-soft-lg z-30">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 shadow-soft-lg z-30 safe-bottom">
         <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
           <button
             onClick={handleCallClick}

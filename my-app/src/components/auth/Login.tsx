@@ -35,8 +35,9 @@ export default function Login() {
     setServerError(null);
     try {
       const user = await login(values);
-      const redirectTo = (location.state as { from?: string } | null)?.from ?? ROLE_HOME_ROUTE[user.role];
-      navigate(redirectTo, { replace: true });
+      const redirectState = location.state as { from?: string; feedState?: unknown } | null;
+      const redirectTo = redirectState?.from ?? ROLE_HOME_ROUTE[user.role];
+      navigate(redirectTo, { replace: true, state: redirectState?.feedState });
     } catch (err) {
       const message = axios.isAxiosError(err) ? err.response?.data?.detail : null;
       setServerError(message || "Something went wrong. Please try again.");
@@ -50,7 +51,7 @@ export default function Login() {
       footer={
         <>
           Don&apos;t have an account?{" "}
-          <Link to="/signup" className="font-medium text-primary hover:underline">
+          <Link to="/signup" state={location.state} className="font-medium text-primary hover:underline">
             Sign up
           </Link>
         </>

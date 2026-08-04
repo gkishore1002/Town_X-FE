@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { X, Heart, Send, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
 import axios from 'axios';
+import TownLoader from '@/components/shared/TownLoader';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8005';
 
@@ -95,8 +96,8 @@ export default function StoryViewer() {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white"></div>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
+        <TownLoader size="lg" label="Loading story" className="[&_p]:text-white/80" />
       </div>
     );
   }
@@ -137,21 +138,21 @@ export default function StoryViewer() {
       </div>
 
       {/* Header */}
-      <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/60 to-transparent z-10">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 flex-1">
+      <div className="absolute top-0 left-0 right-0 p-4 pt-[max(1rem,env(safe-area-inset-top))] bg-gradient-to-b from-black/60 to-transparent z-10">
+        <div className="flex items-center justify-between gap-2 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
             {/* Profile Picture Placeholder */}
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-500 to-brand-800 flex items-center justify-center shadow-soft-sm">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-full bg-gradient-to-br from-brand-500 to-brand-800 flex items-center justify-center shadow-soft-sm">
               <span className="text-white font-bold text-sm">
                 {story.user_id ? story.user_id.charAt(0).toUpperCase() : 'U'}
               </span>
             </div>
 
-            <div className="flex-1">
-              <p className="text-white font-semibold text-sm">
+            <div className="flex-1 min-w-0">
+              <p className="text-white font-semibold text-sm truncate">
                 {story.user_id || 'Anonymous'}
               </p>
-              <p className="text-gray-300 text-xs">
+              <p className="text-gray-300 text-xs truncate">
                 {getTimeAgo(story.created_at)}
               </p>
             </div>
@@ -207,17 +208,17 @@ export default function StoryViewer() {
 
       {/* Caption & Info Overlay */}
       {(story.caption || story.location) && (
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
-          <div className="max-w-xl mx-auto space-y-2">
+        <div className="absolute bottom-0 left-0 right-0 p-4 pb-[max(5.5rem,calc(env(safe-area-inset-bottom)+4.5rem))] sm:pb-6 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none">
+          <div className="max-w-xl mx-auto space-y-2 pr-16 sm:pr-0">
             {story.caption && (
-              <p className="text-white text-sm md:text-base font-medium">
+              <p className="text-white text-sm md:text-base font-medium line-clamp-4 break-words">
                 {story.caption}
               </p>
             )}
             {story.location && (
-              <div className="flex items-center gap-2 text-gray-300 text-xs md:text-sm">
-                <span>📍</span>
-                <span>{story.location}</span>
+              <div className="flex items-center gap-2 text-gray-300 text-xs md:text-sm min-w-0">
+                <span className="shrink-0">📍</span>
+                <span className="truncate">{story.location}</span>
               </div>
             )}
           </div>
@@ -225,7 +226,7 @@ export default function StoryViewer() {
       )}
 
       {/* Story Stats - Bottom Right */}
-      <div className="absolute bottom-20 right-4 flex flex-col items-center gap-4 z-10">
+      <div className="absolute bottom-[max(5rem,calc(env(safe-area-inset-bottom)+3.5rem))] sm:bottom-20 right-3 sm:right-4 flex flex-col items-center gap-3 sm:gap-4 z-10">
         {/* Views */}
         <div className="flex flex-col items-center">
           <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">

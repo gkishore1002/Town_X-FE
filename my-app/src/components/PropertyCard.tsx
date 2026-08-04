@@ -199,7 +199,7 @@ export function PropertyCard({
           )}
 
           {/* Quick actions */}
-          <div className="absolute right-2 top-2 flex flex-col gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+          <div className="absolute right-2 top-2 flex flex-col gap-1.5 opacity-100 md:opacity-0 transition-opacity md:group-hover:opacity-100 md:focus-within:opacity-100">
             <ActionIconButton
               label={isFavourite ? "Remove from favourites" : "Save to favourites"}
               active={isFavourite}
@@ -295,10 +295,10 @@ export function PropertyCard({
             </div>
           )}
 
-          <div className="mt-auto grid grid-cols-5 gap-1.5 pt-1">
+          <div className="mt-auto grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
             <Button
               size="sm"
-              className="col-span-2"
+              className="col-span-2 sm:col-span-2 min-h-9"
               onClick={() => onOpenDetails?.(property.id)}
             >
               View Details

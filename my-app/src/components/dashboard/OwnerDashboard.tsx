@@ -5,6 +5,7 @@ import { Building2, IndianRupee, Plus, Trash2 } from "lucide-react";
 
 import { propertyAPI } from "@/services/api";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
+import TownLoader from "@/components/shared/TownLoader";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -61,11 +62,7 @@ export default function OwnerDashboard() {
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="h-64 animate-pulse bg-secondary" />
-          ))}
-        </div>
+        <TownLoader size="md" label="Loading listings" minHeight="40vh" />
       ) : properties.length === 0 ? (
         <Card className="p-10 text-center">
           <Building2 className="mx-auto mb-3 size-10 text-muted-foreground" />

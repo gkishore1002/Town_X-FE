@@ -9,7 +9,7 @@ const USER_KEY = "townx_user";
 
 /** Where each role lands right after login/signup. */
 export const ROLE_HOME_ROUTE: Record<UserRole, string> = {
-  buyer: "/",
+  buyer: "/home",
   owner: "/owner/dashboard",
   admin: "/admin/dashboard",
 };
@@ -48,8 +48,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
       return;
     }
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 5000);
+
     authAPI
-      .me()
+      .me(controller.signal)
       .then((freshUser) => {
         setUser(freshUser);
         localStorage.setItem(USER_KEY, JSON.stringify(freshUser));
@@ -59,7 +63,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem(USER_KEY);
         setUser(null);
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        window.clearTimeout(timeoutId);
+        setIsLoading(false);
+      });
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeoutId);
+    };
   }, []);
 
   const persistSession = (accessToken: string, nextUser: User) => {

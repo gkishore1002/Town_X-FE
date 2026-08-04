@@ -62,7 +62,7 @@ export function EMICalculator({ propertyPrice, className }: EMICalculatorProps) 
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label htmlFor="emi-principal">Property price (₹)</Label>
             <Input id="emi-principal" type="number" {...register("principal")} />
@@ -99,7 +99,7 @@ export function EMICalculator({ propertyPrice, className }: EMICalculatorProps) 
             <p className="font-display text-2xl font-semibold text-primary">
               {formatInr(result.monthlyEmi)}
             </p>
-            <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-muted-foreground">
+            <div className="mt-3 grid grid-cols-1 xs:grid-cols-3 gap-3 sm:gap-2 text-xs text-muted-foreground">
               <div>
                 <p className="text-foreground font-medium">{formatInr(result.loanAmount, { compact: true })}</p>
                 <p>Loan amount</p>

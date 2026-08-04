@@ -1,8 +1,9 @@
-import { Navigate, useLocation } from "react-router-dom";
-import { Loader2 } from "lucide-react";
 import type { ReactNode } from "react";
+import { Navigate, useLocation } from "react-router-dom";
 
 import { useAuth } from "@/context/AuthContext";
+import { AuthRequiredRedirect } from "@/components/auth/AuthRouteRedirect";
+import TownLoader from "@/components/shared/TownLoader";
 import type { UserRole } from "@/types/user";
 
 export function ProtectedRoute({
@@ -17,15 +18,16 @@ export function ProtectedRoute({
   const location = useLocation();
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="size-6 animate-spin text-primary" />
-      </div>
-    );
+    return <TownLoader fullScreen label="Checking session" />;
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+    return (
+      <AuthRequiredRedirect
+        from={location.pathname}
+        feedState={location.state}
+      />
+    );
   }
 
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {

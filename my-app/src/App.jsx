@@ -1,45 +1,107 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import DynamicLandingPage from './components/DynamicLandingPage';
-import StoryViewer from './components/StoryViewer';
-import PropertyFeed from './components/PropertyFeed';
-import PropertyDetails from './components/PropertyDetails';
-import Favourites from './components/Favourites';
-import Login from './components/auth/Login';
-import Signup from './components/auth/Signup';
-import ProtectedRoute from './components/auth/ProtectedRoute';
-import OwnerDashboard from './components/dashboard/OwnerDashboard';
-import AdminDashboard from './components/dashboard/AdminDashboard';
+import { lazy, Suspense } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+
+import DynamicLandingPage from "./components/DynamicLandingPage";
+import { AuthRouteRedirect } from "./components/auth/AuthRouteRedirect";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+import { AuthDrawerProvider } from "@/context/AuthDrawerContext";
+import PageLoader from "@/components/shared/PageLoader";
+
+const HomePage = lazy(() => import("./components/HomePage"));
+const StoryViewer = lazy(() => import("./components/StoryViewer"));
+const PropertyFeed = lazy(() => import("./components/PropertyFeed"));
+const PropertyDetails = lazy(() => import("./components/PropertyDetails"));
+const Favourites = lazy(() => import("./components/Favourites"));
+const OwnerDashboard = lazy(() => import("./components/dashboard/OwnerDashboard"));
+const AdminDashboard = lazy(() => import("./components/dashboard/AdminDashboard"));
+
+function Lazy({ children }) {
+  return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
+}
 
 function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<DynamicLandingPage />} />
-        <Route path="/story/:id" element={<StoryViewer />} />
-        <Route path="/property-feed" element={<PropertyFeed />} />
-        <Route path="/property/:id" element={<PropertyDetails />} />
-        <Route path="/favourites" element={<Favourites />} />
+      <AuthDrawerProvider>
+        <Routes>
+          <Route path="/" element={<DynamicLandingPage />} />
+          <Route path="/login" element={<AuthRouteRedirect mode="login" />} />
+          <Route path="/signup" element={<AuthRouteRedirect mode="signup" />} />
 
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
+          <Route
+            path="/home"
+            element={
+              <ProtectedRoute>
+                <Lazy>
+                  <HomePage />
+                </Lazy>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/owner/dashboard"
-          element={
-            <ProtectedRoute allowedRoles={['owner']}>
-              <OwnerDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/dashboard"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
+          <Route
+            path="/story/:id"
+            element={
+              <ProtectedRoute>
+                <Lazy>
+                  <StoryViewer />
+                </Lazy>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/property-feed"
+            element={
+              <ProtectedRoute>
+                <Lazy>
+                  <PropertyFeed />
+                </Lazy>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/property/:id"
+            element={
+              <ProtectedRoute>
+                <Lazy>
+                  <PropertyDetails />
+                </Lazy>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/favourites"
+            element={
+              <ProtectedRoute>
+                <Lazy>
+                  <Favourites />
+                </Lazy>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/owner/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["owner"]}>
+                <Lazy>
+                  <OwnerDashboard />
+                </Lazy>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <Lazy>
+                  <AdminDashboard />
+                </Lazy>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </AuthDrawerProvider>
     </Router>
   );
 }

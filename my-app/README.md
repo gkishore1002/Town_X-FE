@@ -84,7 +84,7 @@ cp .env.example .env
 For local development:
 
 ```env
-VITE_API_URL=http://localhost:8000
+VITE_API_URL=http://localhost:8005
 ```
 
 ### 3.3 — Change the URL if needed
@@ -92,7 +92,7 @@ VITE_API_URL=http://localhost:8000
 If your API runs on a different address, update the value:
 
 ```env
-VITE_API_URL=http://localhost:8001
+VITE_API_URL=http://localhost:8005
 ```
 
 For production:

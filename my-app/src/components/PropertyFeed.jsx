@@ -4,23 +4,11 @@ import { Search, MapPin, Bed, Bath, Square, Heart, Phone, RotateCcw, SlidersHori
 import TinderCard from 'react-tinder-card';
 import { propertyAPI } from '../services/api';
 import { PropertyCard } from './PropertyCard';
+import { getApiErrorMessage } from '@/lib/apiErrors';
+import LoadErrorState from "@/components/shared/LoadErrorState";
+import TownLoader from "@/components/shared/TownLoader";
 
-const APP_LOGO_SRC = "/logo.png";
-const APP_NAME = "Town Exchange";
-
-function SkeletonCard() {
-  return (
-    <div className="bg-white rounded-card shadow-soft-sm border border-gray-100 overflow-hidden flex flex-col animate-pulse">
-      <div className="h-36 sm:h-40 md:h-44 bg-gray-100" />
-      <div className="p-3 flex flex-col gap-2">
-        <div className="h-3.5 bg-gray-100 rounded w-3/4" />
-        <div className="h-4 bg-gray-100 rounded w-1/2" />
-        <div className="h-3 bg-gray-100 rounded w-2/3" />
-        <div className="h-7 bg-gray-100 rounded-control w-full mt-1" />
-      </div>
-    </div>
-  );
-}
+import { TownExchangeBrand, TownExchangeLogo } from './brand/TownExchangeLogo';
 
 export default function PropertyFeed() {
   const location = useLocation();
@@ -29,6 +17,7 @@ export default function PropertyFeed() {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [errorCause, setErrorCause] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -97,6 +86,7 @@ export default function PropertyFeed() {
   const fetchProperties = async () => {
     setLoading(true);
     setError(null);
+    setErrorCause(null);
     try {
       const params = {};
 
@@ -131,8 +121,9 @@ export default function PropertyFeed() {
       setCurrentIndex(filteredData.length - 1);
       setSwipedCards([]);
     } catch (err) {
-      setError('Failed to load properties');
-      console.error('Error:', err);
+      setError(getApiErrorMessage(err, 'Could not load properties. Please try again.'));
+      setErrorCause(err);
+      console.error('Error loading properties:', err);
     } finally {
       setLoading(false);
     }
@@ -147,14 +138,17 @@ export default function PropertyFeed() {
     }
 
     setLoading(true);
+    setError(null);
+    setErrorCause(null);
     try {
       const results = await propertyAPI.searchProperties(query);
       setProperties(results);
       setCurrentIndex(results.length - 1);
       setSwipedCards([]);
     } catch (err) {
-      setError('Search failed');
-      console.error('Error:', err);
+      setError(getApiErrorMessage(err, 'Search failed. Please try again.'));
+      setErrorCause(err);
+      console.error('Error searching properties:', err);
     } finally {
       setLoading(false);
     }
@@ -177,7 +171,7 @@ export default function PropertyFeed() {
       );
     } catch (err) {
       console.error('Error toggling favourite:', err);
-      alert('Failed to update favourite. Please try again.');
+      alert(getApiErrorMessage(err, 'Failed to update favourite. Please try again.'));
     }
   };
 
@@ -266,7 +260,7 @@ export default function PropertyFeed() {
   const MobileSwipeCard = ({ property, isSwipeable = false }) => (
     <div
       className={`bg-white rounded-card shadow-soft-sm border border-gray-100 hover:shadow-soft-lg overflow-hidden flex flex-col transition-all duration-200 ${
-        isSwipeable ? 'h-[calc(100vh-340px)] max-h-[520px]' : 'hover:-translate-y-1'
+        isSwipeable ? 'h-[min(calc(100dvh-16rem),520px)]' : 'hover:-translate-y-1'
       }`}
     >
       <div
@@ -392,12 +386,12 @@ export default function PropertyFeed() {
   const hasActiveFilters = filters.bhkType || filters.minPrice || filters.maxPrice || filters.propertyFor || filters.furnishing || filters.parking;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       {/* Professional Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-soft-sm">
-        <div className="px-4 py-3 max-w-7xl mx-auto">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-soft-sm safe-top">
+        <div className="px-3 sm:px-4 py-2.5 sm:py-3 max-w-7xl mx-auto">
+          <div className="flex items-center justify-between gap-2 min-w-0">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
               {/* Mobile Back Button */}
               <button
                 onClick={() => navigate(-1)}
@@ -406,25 +400,18 @@ export default function PropertyFeed() {
                 <ChevronLeft size={24} className="text-gray-700" />
               </button>
 
-              <button className="flex items-center gap-2.5 hover:opacity-85 transition-opacity" onClick={() => navigate('/')}>
-                <img
-                  src={APP_LOGO_SRC}
-                  alt={APP_NAME}
-                  className="h-9 w-9 rounded-lg object-contain bg-white shadow-soft-sm border border-gray-200"
-                />
-                <div className="flex flex-col">
-                  <span className="text-base font-semibold text-gray-900 leading-tight">
-                    {APP_NAME}
-                  </span>
-                  <span className="text-xs text-gray-500 leading-tight hidden sm:block">
-                    Property Marketplace
-                  </span>
-                </div>
-              </button>
+              <TownExchangeBrand
+                asButton
+                logoSize={36}
+                showTagline
+                tagline="Property Marketplace"
+                onClick={() => navigate('/')}
+                className="min-w-0 max-w-[min(100%,14rem)] sm:max-w-none"
+              />
             </div>
 
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1.5 rounded-lg font-medium">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="hidden sm:inline text-sm text-gray-600 bg-gray-100 px-3 py-1.5 rounded-lg font-medium">
                 {loading ? 'Loading...' : `${properties.length} Properties`}
               </span>
             </div>
@@ -450,17 +437,17 @@ export default function PropertyFeed() {
       </div>
 
       {/* Combined Search and Filter Section */}
-      <div className="bg-white border-b border-gray-200 sticky top-[73px] md:top-[85px] z-40 shadow-soft-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+      <div className="bg-white border-b border-gray-200 sticky top-[52px] sm:top-[60px] md:top-[85px] z-40 shadow-soft-sm">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           {/* Search and Filter Row */}
-          <div className="flex gap-3 mb-3">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-3">
             {/* Search Bar */}
-            <form onSubmit={handleSearch} className="flex-1">
+            <form onSubmit={handleSearch} className="flex-1 min-w-0 w-full">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                 <input
                   type="text"
-                  placeholder="Search by location, property type, or keyword..."
+                  placeholder="Search location, type, keyword..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-control focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
@@ -529,21 +516,14 @@ export default function PropertyFeed() {
       {/* Properties Content */}
       <div className="max-w-7xl mx-auto px-4 py-6 pb-24">
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <SkeletonCard key={i} />
-            ))}
-          </div>
+          <TownLoader size="lg" label="Finding properties" minHeight="55vh" />
         ) : error ? (
-          <div className="text-center py-16">
-            <p className="text-red-600 text-base font-medium">{error}</p>
-            <button
-              onClick={fetchProperties}
-              className="mt-4 px-6 py-2.5 text-white rounded-control font-medium text-sm shadow-soft-md hover:shadow-brand-glow transition-all bg-brand-500 hover:bg-brand-700"
-            >
-              Try Again
-            </button>
-          </div>
+          <LoadErrorState
+            title="Couldn't load properties"
+            message={error}
+            error={errorCause}
+            onRetry={fetchProperties}
+          />
         ) : properties.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-gray-600 text-base font-medium">No properties found</p>
@@ -554,14 +534,10 @@ export default function PropertyFeed() {
           <div className="relative">
             {currentIndex < 0 ? (
               /* No More Cards Screen */
-              <div className="flex flex-col items-center justify-center h-[calc(100vh-340px)] max-h-[520px]">
+              <div className="flex flex-col items-center justify-center h-[min(calc(100dvh-16rem),520px)]">
                 <div className="text-center p-6">
                   <div className="w-20 h-20 mx-auto mb-4 bg-brand-50 rounded-full flex items-center justify-center">
-                    <img
-                      src={APP_LOGO_SRC}
-                      alt={APP_NAME}
-                      className="w-12 h-12 rounded-full object-contain"
-                    />
+                    <TownExchangeLogo size={48} />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
                     No More Properties
@@ -580,7 +556,7 @@ export default function PropertyFeed() {
               </div>
             ) : (
               <>
-                <div className="relative h-[calc(100vh-340px)] max-h-[520px] flex items-center justify-center">
+                <div className="relative h-[min(calc(100dvh-16rem),520px)] flex items-center justify-center">
                   {properties.map((property, index) => (
                     <TinderCard
                       ref={childRefs[index]}
@@ -667,8 +643,8 @@ export default function PropertyFeed() {
 
       {/* Filter Modal */}
       {showFilterModal && (
-        <div className="fixed inset-0 bg-black/40 z-[9999] flex items-end md:items-center justify-center backdrop-blur-sm">
-          <div className="bg-white w-full md:w-[520px] md:rounded-card rounded-t-card max-h-[90vh] overflow-y-auto shadow-soft-lg">
+        <div className="fixed inset-0 bg-black/40 z-[9999] flex items-end md:items-center justify-center backdrop-blur-sm px-2 safe-bottom">
+          <div className="bg-white w-full md:w-[520px] md:rounded-card rounded-t-card max-h-[92dvh] overflow-y-auto shadow-soft-lg">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-5 py-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">Filter Properties</h2>
               <button
@@ -682,7 +658,7 @@ export default function PropertyFeed() {
             <div className="p-5 space-y-5">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">BHK Type</label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {['1 BHK', '2 BHK', '3 BHK', '4 BHK', '5 BHK', 'Studio'].map((bhk) => (
                     <button
                       key={bhk}
@@ -736,7 +712,7 @@ export default function PropertyFeed() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Furnishing Status</label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {['Furnished', 'Semi-Furnished', 'Unfurnished'].map((furnish) => (
                     <button
                       key={furnish}

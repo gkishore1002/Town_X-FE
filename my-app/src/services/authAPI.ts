@@ -24,8 +24,8 @@ export const authAPI = {
     return response.data;
   },
 
-  me: async (): Promise<User> => {
-    const response = await api.get<User>("/api/auth/me");
+  me: async (signal?: AbortSignal): Promise<User> => {
+    const response = await api.get<User>("/api/auth/me", { signal });
     return response.data;
   },
 };

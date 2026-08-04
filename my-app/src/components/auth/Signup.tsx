@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Loader2, Home, Building2, ShieldCheck } from "lucide-react";
 import axios from "axios";
 
@@ -32,9 +32,21 @@ const ROLE_OPTIONS: { value: UserRole; label: string; description: string; icon:
   { value: "admin", label: "Admin", description: "Platform administration", icon: ShieldCheck },
 ];
 
+type SignupLocationState = {
+  from?: string;
+  defaultRole?: UserRole;
+};
+
+function isUserRole(value: unknown): value is UserRole {
+  return value === "buyer" || value === "owner" || value === "admin";
+}
+
 export default function Signup() {
   const { signup } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const routeState = location.state as SignupLocationState | null;
+  const initialRole = isUserRole(routeState?.defaultRole) ? routeState.defaultRole : "buyer";
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {
@@ -44,14 +56,16 @@ export default function Signup() {
     formState: { errors, isSubmitting },
   } = useForm<SignupValues>({
     resolver: zodResolver(signupSchema),
-    defaultValues: { role: "buyer" },
+    defaultValues: { role: initialRole },
   });
 
   const onSubmit = async (values: SignupValues) => {
     setServerError(null);
     try {
       const user = await signup(values);
-      navigate(ROLE_HOME_ROUTE[user.role], { replace: true });
+      const redirectState = location.state as { from?: string; feedState?: unknown } | null;
+      const redirectTo = redirectState?.from ?? ROLE_HOME_ROUTE[user.role];
+      navigate(redirectTo, { replace: true, state: redirectState?.feedState });
     } catch (err) {
       const message = axios.isAxiosError(err) ? err.response?.data?.detail : null;
       setServerError(message || "Something went wrong. Please try again.");
@@ -78,7 +92,7 @@ export default function Signup() {
             control={control}
             name="role"
             render={({ field }) => (
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {ROLE_OPTIONS.map((option) => {
                   const Icon = option.icon;
                   const selected = field.value === option.value;

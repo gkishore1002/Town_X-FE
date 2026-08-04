@@ -3,20 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Home, ArrowLeft, Heart, Filter, HeartOff } from 'lucide-react';
 import { propertyAPI } from '../services/api';
 import { PropertyCard } from './PropertyCard';
-
-function SkeletonCard() {
-  return (
-    <div className="bg-white rounded-card shadow-soft-sm border border-gray-100 overflow-hidden flex flex-col animate-pulse">
-      <div className="h-48 md:h-56 bg-gray-100" />
-      <div className="p-4 flex flex-col gap-2.5">
-        <div className="h-4 bg-gray-100 rounded w-3/4" />
-        <div className="h-6 bg-gray-100 rounded w-1/2" />
-        <div className="h-3.5 bg-gray-100 rounded w-2/3" />
-        <div className="h-9 bg-gray-100 rounded-control w-full mt-2" />
-      </div>
-    </div>
-  );
-}
+import { getApiErrorMessage } from '@/lib/apiErrors';
+import LoadErrorState from "@/components/shared/LoadErrorState";
+import TownLoader from "@/components/shared/TownLoader";
 
 export default function Favourites() {
   const navigate = useNavigate();
@@ -24,6 +13,7 @@ export default function Favourites() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState(null);
+  const [errorCause, setErrorCause] = useState(null);
 
   useEffect(() => {
     loadFavourites();
@@ -32,14 +22,15 @@ export default function Favourites() {
   const loadFavourites = async () => {
     setLoading(true);
     setError(null);
+    setErrorCause(null);
 
     try {
-      // Fetch favourites from backend using is_favourite field
       const favourites = await propertyAPI.getFavourites();
       setProperties(favourites);
     } catch (err) {
       console.error('Error loading favourites:', err);
-      setError('Failed to load favourites');
+      setError(getApiErrorMessage(err, 'Could not load favourites. Please try again.'));
+      setErrorCause(err);
     } finally {
       setLoading(false);
     }
@@ -65,22 +56,22 @@ export default function Favourites() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-soft-sm sticky top-0 z-50">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+      <header className="bg-white shadow-soft-sm sticky top-0 z-50 safe-top">
         <div className="px-3 py-3 max-w-7xl mx-auto">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <button
               onClick={() => navigate(-1)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
             >
-              <ArrowLeft size={24} className="text-gray-700 md:w-6 md:h-6" />
+              <ArrowLeft size={22} className="text-gray-700 sm:w-6 sm:h-6" />
             </button>
 
-            <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
-              <Home size={28} className="text-brand-600 md:w-8 md:h-8" strokeWidth={2} />
+            <div className="flex items-center cursor-pointer flex-shrink-0" onClick={() => navigate('/')}>
+              <Home size={26} className="text-brand-600 sm:w-8 sm:h-8" strokeWidth={2} />
             </div>
 
-            <form onSubmit={handleSearch} className="relative flex-1 max-w-2xl">
+            <form onSubmit={handleSearch} className="relative flex-1 min-w-[140px] basis-[50%] sm:basis-auto sm:max-w-2xl order-3 sm:order-none w-full sm:w-auto">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
               <input
                 type="text"
@@ -91,8 +82,8 @@ export default function Favourites() {
               />
             </form>
 
-            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-              <Filter size={20} className="text-gray-700 md:w-6 md:h-6" />
+            <button type="button" className="hidden sm:block p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0" aria-hidden>
+              <Filter size={20} className="text-gray-700" />
             </button>
           </div>
         </div>
@@ -112,21 +103,14 @@ export default function Favourites() {
 
       <div className="max-w-7xl mx-auto px-4 py-4 md:py-6 pb-8">
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <SkeletonCard key={i} />
-            ))}
-          </div>
+          <TownLoader size="lg" label="Loading favourites" minHeight="50vh" />
         ) : error ? (
-          <div className="text-center py-12">
-            <p className="text-red-500 text-lg">{error}</p>
-            <button
-              onClick={loadFavourites}
-              className="mt-4 px-6 py-2 bg-red-500 text-white rounded-control hover:bg-red-600 transition-colors"
-            >
-              Try Again
-            </button>
-          </div>
+          <LoadErrorState
+            title="Couldn't load favourites"
+            message={error}
+            error={errorCause}
+            onRetry={loadFavourites}
+          />
         ) : properties.length === 0 ? (
           <div className="text-center py-12">
             <HeartOff size={64} className="mx-auto text-gray-300 mb-4" />

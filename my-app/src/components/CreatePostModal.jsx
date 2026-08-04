@@ -255,7 +255,7 @@ export default function CreatePostModal({ isOpen, onClose, onSuccess }) {
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm px-2 md:px-3 py-2"
+          className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm px-2 md:px-3 py-2 safe-bottom"
           onClick={handleClose}
           variants={backdropVariants}
           initial="hidden"
@@ -263,7 +263,7 @@ export default function CreatePostModal({ isOpen, onClose, onSuccess }) {
           exit="exit"
         >
           <motion.div
-            className="w-full max-w-lg bg-white rounded-card shadow-soft-lg border border-brand-100 max-h-[95vh] flex flex-col"
+            className="w-full max-w-lg bg-white rounded-t-2xl sm:rounded-card shadow-soft-lg border border-brand-100 max-h-[92dvh] sm:max-h-[95vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
             variants={modalVariants}
           >
@@ -381,7 +381,7 @@ export default function CreatePostModal({ isOpen, onClose, onSuccess }) {
                         <label className="block text-xs font-medium text-gray-700 mb-1.5">
                           You are looking to<span className="text-red-500">*</span>
                         </label>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                           {["Rent/Lease", "Sell", "PG/Hostel"].map((option) => (
                             <OptionButton
                               key={option}
@@ -432,7 +432,7 @@ export default function CreatePostModal({ isOpen, onClose, onSuccess }) {
                         <label className="block text-xs font-medium text-gray-700 mb-1.5">
                           Apartment Type<span className="text-red-500">*</span>
                         </label>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                           {[
                             "Flat",
                             "Independent House",
@@ -456,7 +456,7 @@ export default function CreatePostModal({ isOpen, onClose, onSuccess }) {
                         <label className="block text-xs font-medium text-gray-700 mb-1.5">
                           BHK Type<span className="text-red-500">*</span>
                         </label>
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                           {[
                             "1 RK",
                             "1 BHK",
@@ -606,7 +606,7 @@ export default function CreatePostModal({ isOpen, onClose, onSuccess }) {
                         <label className="block text-xs font-medium text-gray-700 mb-1.5">
                           Property Age<span className="text-red-500">*</span>
                         </label>
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                           {["0-1 Year", "1-5 Years", "5-10 Years", "10+ Years"].map(
                             (option) => (
                               <OptionButton
@@ -626,7 +626,7 @@ export default function CreatePostModal({ isOpen, onClose, onSuccess }) {
                         <label className="block text-xs font-medium text-gray-700 mb-1.5">
                           Furnishing Status<span className="text-red-500">*</span>
                         </label>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                           {[
                             "Fully Furnished",
                             "Semi Furnished",
@@ -649,7 +649,7 @@ export default function CreatePostModal({ isOpen, onClose, onSuccess }) {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">
                             Bathrooms
@@ -695,7 +695,7 @@ export default function CreatePostModal({ isOpen, onClose, onSuccess }) {
                         <label className="block text-xs font-medium text-gray-700 mb-1.5">
                           Amenities
                         </label>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                           {amenitiesList.map((amenity) => (
                             <OptionButton
                               key={amenity}
@@ -850,7 +850,7 @@ export default function CreatePostModal({ isOpen, onClose, onSuccess }) {
                           <h3 className="text-xs font-semibold text-gray-700 mb-2">
                             Uploaded Photos ({uploadedFiles.length}/20)
                           </h3>
-                          <div className="grid grid-cols-3 gap-2">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                             {uploadedFiles.map((file, index) => (
                               <div key={index} className="relative group">
                                 <img
