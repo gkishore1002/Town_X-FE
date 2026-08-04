@@ -1,11 +1,26 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Search, MapPin, Bed, Bath, Square, Heart, Phone, RotateCcw, SlidersHorizontal, ChevronRight, ChevronLeft, Home } from 'lucide-react';
+import { Search, MapPin, Bed, Bath, Square, Heart, Phone, RotateCcw, SlidersHorizontal, ChevronRight, ChevronLeft, Home, X } from 'lucide-react';
 import TinderCard from 'react-tinder-card';
 import { propertyAPI } from '../services/api';
+import { PropertyCard } from './PropertyCard';
 
 const APP_LOGO_SRC = "/logo.png";
 const APP_NAME = "Town Exchange";
+
+function SkeletonCard() {
+  return (
+    <div className="bg-white rounded-card shadow-soft-sm border border-gray-100 overflow-hidden flex flex-col animate-pulse">
+      <div className="h-36 sm:h-40 md:h-44 bg-gray-100" />
+      <div className="p-3 flex flex-col gap-2">
+        <div className="h-3.5 bg-gray-100 rounded w-3/4" />
+        <div className="h-4 bg-gray-100 rounded w-1/2" />
+        <div className="h-3 bg-gray-100 rounded w-2/3" />
+        <div className="h-7 bg-gray-100 rounded-control w-full mt-1" />
+      </div>
+    </div>
+  );
+}
 
 export default function PropertyFeed() {
   const location = useLocation();
@@ -20,7 +35,7 @@ export default function PropertyFeed() {
   const [isMobile, setIsMobile] = useState(false);
   const [swipedCards, setSwipedCards] = useState([]);
   const [showComingSoon, setShowComingSoon] = useState(false);
-  
+
   const currentIndexRef = useRef(currentIndex);
   const childRefs = useMemo(
     () =>
@@ -29,13 +44,14 @@ export default function PropertyFeed() {
         .map(() => React.createRef()),
     [properties.length]
   );
-  
+
   const [sortBy, setSortBy] = useState('recent');
   const [filters, setFilters] = useState({
     bhkType: '',
     minPrice: '',
     maxPrice: '',
     propertyFor: '',
+    propertyType: '',
     furnishing: '',
     parking: false,
     amenities: []
@@ -45,7 +61,7 @@ export default function PropertyFeed() {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
@@ -55,7 +71,20 @@ export default function PropertyFeed() {
     if (location.state?.category) {
       setCategory(location.state.category);
     }
-  }, [location]);
+    if (location.state?.propertyFor || location.state?.propertyType) {
+      setFilters((prev) => ({
+        ...prev,
+        propertyFor: location.state.propertyFor || prev.propertyFor,
+        propertyType: location.state.propertyType || prev.propertyType,
+      }));
+    }
+    if (location.state?.query) {
+      setSearchQuery(location.state.query);
+      handleSearch({ preventDefault: () => {} }, location.state.query);
+    }
+    // Only ever meant to run once for the state that arrived with this navigation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   useEffect(() => {
     fetchProperties();
@@ -70,7 +99,7 @@ export default function PropertyFeed() {
     setError(null);
     try {
       const params = {};
-      
+
       if (category !== 'All Properties') {
         params.category = category;
       }
@@ -79,12 +108,13 @@ export default function PropertyFeed() {
       if (filters.maxPrice) params.max_price = parseFloat(filters.maxPrice);
       if (filters.bhkType) params.bhk_type = filters.bhkType;
       if (filters.propertyFor) params.property_for = filters.propertyFor;
+      if (filters.propertyType) params.property_type = filters.propertyType;
       if (filters.furnishing) params.furnishing_status = filters.furnishing;
 
       const data = await propertyAPI.getProperties(params);
-      
+
       let filteredData = [...data];
-      
+
       if (sortBy === 'price_low') {
         filteredData.sort((a, b) => a.expected_price - b.expected_price);
       } else if (sortBy === 'price_high') {
@@ -108,16 +138,17 @@ export default function PropertyFeed() {
     }
   };
 
-  const handleSearch = async (e) => {
+  const handleSearch = async (e, queryOverride) => {
     e.preventDefault();
-    if (!searchQuery.trim()) {
+    const query = (queryOverride ?? searchQuery).trim();
+    if (!query) {
       fetchProperties();
       return;
     }
 
     setLoading(true);
     try {
-      const results = await propertyAPI.searchProperties(searchQuery);
+      const results = await propertyAPI.searchProperties(query);
       setProperties(results);
       setCurrentIndex(results.length - 1);
       setSwipedCards([]);
@@ -134,7 +165,7 @@ export default function PropertyFeed() {
       e.stopPropagation();
       e.preventDefault();
     }
-    
+
     try {
       const result = await propertyAPI.toggleFavourite(propertyId);
       setProperties(prevProperties =>
@@ -188,6 +219,7 @@ export default function PropertyFeed() {
       minPrice: '',
       maxPrice: '',
       propertyFor: '',
+      propertyType: '',
       furnishing: '',
       parking: false,
       amenities: []
@@ -219,22 +251,22 @@ export default function PropertyFeed() {
 
   const goBack = async () => {
     if (swipedCards.length === 0) return;
-    
+
     const lastSwiped = swipedCards[swipedCards.length - 1];
     const newIndex = lastSwiped.index;
-    
+
     setCurrentIndex(newIndex);
     setSwipedCards(prev => prev.slice(0, -1));
-    
+
     if (childRefs[newIndex] && childRefs[newIndex].current) {
       await childRefs[newIndex].current.restoreCard();
     }
   };
 
-  const PropertyCard = ({ property, isSwipeable = false }) => (
+  const MobileSwipeCard = ({ property, isSwipeable = false }) => (
     <div
-      className={`bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md overflow-hidden flex flex-col transition-shadow duration-200 ${
-        isSwipeable ? 'h-[calc(100vh-340px)] max-h-[520px]' : ''
+      className={`bg-white rounded-card shadow-soft-sm border border-gray-100 hover:shadow-soft-lg overflow-hidden flex flex-col transition-all duration-200 ${
+        isSwipeable ? 'h-[calc(100vh-340px)] max-h-[520px]' : 'hover:-translate-y-1'
       }`}
     >
       <div
@@ -242,7 +274,7 @@ export default function PropertyFeed() {
           isSwipeable ? 'h-2/5' : 'h-36 sm:h-40 md:h-44'
         }`}
       >
-        <div 
+        <div
           className="w-full h-full cursor-pointer"
           onClick={(e) => handleImageClick(property.id, e)}
           onTouchEnd={(e) => {
@@ -260,8 +292,9 @@ export default function PropertyFeed() {
             }}
           />
         </div>
+        <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/35 to-transparent pointer-events-none" />
         {property.property_for && (
-          <div className="absolute top-2 left-2 bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded font-medium shadow-sm pointer-events-none">
+          <div className="absolute top-2 left-2 bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded font-medium shadow-soft-sm pointer-events-none">
             For {property.property_for}
           </div>
         )}
@@ -271,7 +304,7 @@ export default function PropertyFeed() {
             e.preventDefault();
             handleSaveProperty(property.id, e);
           }}
-          className="absolute top-2 right-2 bg-white p-1.5 rounded-full hover:bg-gray-50 transition-colors shadow-sm z-10"
+          className="absolute top-2 right-2 bg-white p-1.5 rounded-full hover:bg-gray-50 transition-colors shadow-soft-sm z-10"
         >
           <Heart
             size={16}
@@ -286,7 +319,7 @@ export default function PropertyFeed() {
             {property.bhk_type || 'N/A'} {property.apartment_type || 'Property'}
             {property.apartment_name && ` in ${property.apartment_name}`}
           </h3>
-          <p className="text-lg font-bold text-purple-600">
+          <p className="text-lg font-bold text-brand-600">
             {formatPrice(property.expected_price)}
             {property.property_for === 'Rent/Lease' && property.expected_price && (
               <span className="text-xs text-gray-500 font-normal">/month</span>
@@ -335,21 +368,18 @@ export default function PropertyFeed() {
                 e.preventDefault();
                 handlePropertyClick(property.id, e);
               }}
-              className="col-span-2 py-1.5 px-2 rounded-lg text-white font-medium text-xs transition-colors flex items-center justify-center gap-1 z-10"
-              style={{ backgroundColor: '#7C01A2' }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = '#5D1578'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = '#7C01A2'}
+              className="col-span-2 py-1.5 px-2 rounded-control text-white font-medium text-xs transition-colors flex items-center justify-center gap-1 z-10 bg-brand-500 hover:bg-brand-700"
             >
               <span>View Details</span>
             </button>
 
-            <button 
+            <button
               onClick={(e) => handleCallClick(e)}
               onTouchEnd={(e) => {
                 e.preventDefault();
                 handleCallClick(e);
               }}
-              className="py-1.5 px-2 rounded-lg border border-emerald-600 text-emerald-600 hover:bg-emerald-50 font-medium text-xs transition-colors flex items-center justify-center z-10"
+              className="py-1.5 px-2 rounded-control border border-emerald-600 text-emerald-600 hover:bg-emerald-50 font-medium text-xs transition-colors flex items-center justify-center z-10"
             >
               <Phone size={14} />
             </button>
@@ -364,7 +394,7 @@ export default function PropertyFeed() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Professional Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-soft-sm">
         <div className="px-4 py-3 max-w-7xl mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -380,7 +410,7 @@ export default function PropertyFeed() {
                 <img
                   src={APP_LOGO_SRC}
                   alt={APP_NAME}
-                  className="h-9 w-9 rounded-lg object-contain bg-white shadow-sm border border-gray-200"
+                  className="h-9 w-9 rounded-lg object-contain bg-white shadow-soft-sm border border-gray-200"
                 />
                 <div className="flex flex-col">
                   <span className="text-base font-semibold text-gray-900 leading-tight">
@@ -406,21 +436,21 @@ export default function PropertyFeed() {
       <div className="hidden md:block bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <nav className="flex items-center space-x-2 text-sm">
-            <button 
+            <button
               onClick={() => navigate('/')}
-              className="flex items-center gap-1.5 text-gray-600 hover:text-purple-600 transition-colors group"
+              className="flex items-center gap-1.5 text-gray-600 hover:text-brand-600 transition-colors group"
             >
               <Home size={16} className="group-hover:scale-110 transition-transform" />
               <span className="font-medium">Home</span>
             </button>
             <ChevronRight size={16} className="text-gray-400" />
-            <span className="text-purple-600 font-semibold">{category}</span>
+            <span className="text-brand-600 font-semibold">{category}</span>
           </nav>
         </div>
       </div>
 
       {/* Combined Search and Filter Section */}
-      <div className="bg-white border-b border-gray-200 sticky top-[73px] md:top-[85px] z-40 shadow-sm">
+      <div className="bg-white border-b border-gray-200 sticky top-[73px] md:top-[85px] z-40 shadow-soft-sm">
         <div className="max-w-7xl mx-auto px-4 py-4">
           {/* Search and Filter Row */}
           <div className="flex gap-3 mb-3">
@@ -433,7 +463,7 @@ export default function PropertyFeed() {
                   placeholder="Search by location, property type, or keyword..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-control focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
                 />
               </div>
             </form>
@@ -441,9 +471,9 @@ export default function PropertyFeed() {
             {/* Filter Button */}
             <button
               onClick={() => setShowFilterModal(true)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all border ${
-                hasActiveFilters 
-                  ? 'bg-purple-50 text-purple-700 border-purple-300 shadow-sm' 
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-control text-sm font-medium whitespace-nowrap transition-all border ${
+                hasActiveFilters
+                  ? 'bg-brand-50 text-brand-700 border-brand-300 shadow-soft-sm'
                   : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
               }`}
             >
@@ -451,8 +481,8 @@ export default function PropertyFeed() {
               <span className="hidden sm:inline">Filters</span>
               {hasActiveFilters && (
                 <span className="flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-purple-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-600"></span>
+                  <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-brand-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-600"></span>
                 </span>
               )}
             </button>
@@ -461,12 +491,12 @@ export default function PropertyFeed() {
           {/* Sort Pills */}
           <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
             <span className="text-sm text-gray-600 font-medium whitespace-nowrap mr-1">Sort by:</span>
-            
+
             <button
               onClick={() => setSortBy('recent')}
               className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                sortBy === 'recent' 
-                  ? 'bg-purple-600 text-white shadow-md' 
+                sortBy === 'recent'
+                  ? 'bg-brand-500 text-white shadow-soft-md'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -475,8 +505,8 @@ export default function PropertyFeed() {
             <button
               onClick={() => setSortBy('price_low')}
               className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                sortBy === 'price_low' 
-                  ? 'bg-purple-600 text-white shadow-md' 
+                sortBy === 'price_low'
+                  ? 'bg-brand-500 text-white shadow-soft-md'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -485,8 +515,8 @@ export default function PropertyFeed() {
             <button
               onClick={() => setSortBy('price_high')}
               className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                sortBy === 'price_high' 
-                  ? 'bg-purple-600 text-white shadow-md' 
+                sortBy === 'price_high'
+                  ? 'bg-brand-500 text-white shadow-soft-md'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -499,17 +529,17 @@ export default function PropertyFeed() {
       {/* Properties Content */}
       <div className="max-w-7xl mx-auto px-4 py-6 pb-24">
         {loading ? (
-          <div className="text-center py-16">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
-            <p className="text-gray-600 mt-4 text-sm">Loading properties...</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
           </div>
         ) : error ? (
           <div className="text-center py-16">
             <p className="text-red-600 text-base font-medium">{error}</p>
             <button
               onClick={fetchProperties}
-              className="mt-4 px-6 py-2.5 text-white rounded-lg font-medium text-sm shadow-md hover:shadow-lg transition-all"
-              style={{ backgroundColor: '#7C01A2' }}
+              className="mt-4 px-6 py-2.5 text-white rounded-control font-medium text-sm shadow-soft-md hover:shadow-brand-glow transition-all bg-brand-500 hover:bg-brand-700"
             >
               Try Again
             </button>
@@ -526,7 +556,7 @@ export default function PropertyFeed() {
               /* No More Cards Screen */
               <div className="flex flex-col items-center justify-center h-[calc(100vh-340px)] max-h-[520px]">
                 <div className="text-center p-6">
-                  <div className="w-20 h-20 mx-auto mb-4 bg-purple-50 rounded-full flex items-center justify-center">
+                  <div className="w-20 h-20 mx-auto mb-4 bg-brand-50 rounded-full flex items-center justify-center">
                     <img
                       src={APP_LOGO_SRC}
                       alt={APP_NAME}
@@ -541,8 +571,7 @@ export default function PropertyFeed() {
                   </p>
                   <button
                     onClick={resetCards}
-                    className="px-6 py-2.5 rounded-lg text-white font-medium text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 mx-auto"
-                    style={{ backgroundColor: '#7C01A2' }}
+                    className="px-6 py-2.5 rounded-control text-white font-medium text-sm transition-all shadow-soft-md hover:shadow-brand-glow flex items-center justify-center gap-2 mx-auto bg-brand-500 hover:bg-brand-700"
                   >
                     <RotateCcw size={18} />
                     <span>View Again</span>
@@ -563,12 +592,12 @@ export default function PropertyFeed() {
                       swipeRequirementType="position"
                       swipeThreshold={100}
                     >
-                      <div style={{ 
+                      <div style={{
                         display: index <= currentIndex && index > currentIndex - 3 ? 'block' : 'none',
                         transform: index < currentIndex ? `scale(${1 - (currentIndex - index) * 0.05})` : 'scale(1)',
                         opacity: index < currentIndex ? 1 - (currentIndex - index) * 0.3 : 1
                       }}>
-                        <PropertyCard property={property} isSwipeable={true} />
+                        <MobileSwipeCard property={property} isSwipeable={true} />
                       </div>
                     </TinderCard>
                   ))}
@@ -587,8 +616,8 @@ export default function PropertyFeed() {
                   <button
                     onClick={goBack}
                     disabled={swipedCards.length === 0}
-                    className={`w-12 h-12 rounded-full bg-white border border-gray-300 shadow-md flex items-center justify-center transition-all ${
-                      swipedCards.length === 0 ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-50 hover:shadow-lg'
+                    className={`w-12 h-12 rounded-full bg-white border border-gray-300 shadow-soft-md flex items-center justify-center transition-all ${
+                      swipedCards.length === 0 ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-50 hover:shadow-soft-lg'
                     }`}
                   >
                     <RotateCcw size={20} className="text-gray-600" />
@@ -598,7 +627,7 @@ export default function PropertyFeed() {
                       e.preventDefault();
                       if (currentIndex >= 0) handleSaveProperty(properties[currentIndex].id);
                     }}
-                    className="w-14 h-14 rounded-full bg-white border border-gray-300 shadow-md flex items-center justify-center hover:bg-gray-50 hover:shadow-lg transition-all"
+                    className="w-14 h-14 rounded-full bg-white border border-gray-300 shadow-soft-md flex items-center justify-center hover:bg-gray-50 hover:shadow-soft-lg transition-all"
                     disabled={currentIndex < 0}
                   >
                     <Heart size={24} className="text-red-500" />
@@ -611,7 +640,17 @@ export default function PropertyFeed() {
           /* Desktop: Grid View */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
             {properties.map((property) => (
-              <PropertyCard key={property.id} property={property} isSwipeable={false} />
+              <PropertyCard
+                key={property.id}
+                property={property}
+                onOpenDetails={(id) => navigate(`/property/${id}`)}
+                onFavouriteChange={(id, isFav) =>
+                  setProperties((prev) =>
+                    prev.map((p) => (p.id === id ? { ...p, is_favourite: isFav } : p))
+                  )
+                }
+                onCall={handleCallClick}
+              />
             ))}
           </div>
         )}
@@ -626,21 +665,17 @@ export default function PropertyFeed() {
         </div>
       )}
 
-      {/* Filter Modal with Custom Close Icon */}
+      {/* Filter Modal */}
       {showFilterModal && (
         <div className="fixed inset-0 bg-black/40 z-[9999] flex items-end md:items-center justify-center backdrop-blur-sm">
-          <div className="bg-white w-full md:w-[520px] md:rounded-xl rounded-t-xl max-h-[90vh] overflow-y-auto shadow-2xl">
+          <div className="bg-white w-full md:w-[520px] md:rounded-card rounded-t-card max-h-[90vh] overflow-y-auto shadow-soft-lg">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-5 py-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">Filter Properties</h2>
-              <button 
-                onClick={() => setShowFilterModal(false)} 
+              <button
+                onClick={() => setShowFilterModal(false)}
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <img 
-                  src="/red-cross.svg" 
-                  alt="Close" 
-                  className="w-5 h-5"
-                />
+                <X size={20} className="text-gray-600" />
               </button>
             </div>
 
@@ -652,8 +687,8 @@ export default function PropertyFeed() {
                     <button
                       key={bhk}
                       onClick={() => setFilters(prev => ({ ...prev, bhkType: prev.bhkType === bhk ? '' : bhk }))}
-                      className={`py-2 px-3 rounded-lg text-xs font-medium transition-all border ${
-                        filters.bhkType === bhk ? 'bg-purple-50 text-purple-700 border-purple-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      className={`py-2 px-3 rounded-control text-xs font-medium transition-all border ${
+                        filters.bhkType === bhk ? 'bg-brand-50 text-brand-700 border-brand-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                       }`}
                     >
                       {bhk}
@@ -669,8 +704,8 @@ export default function PropertyFeed() {
                     <button
                       key={type}
                       onClick={() => setFilters(prev => ({ ...prev, propertyFor: prev.propertyFor === type ? '' : type }))}
-                      className={`py-2.5 px-3 rounded-lg text-sm font-medium transition-all border ${
-                        filters.propertyFor === type ? 'bg-purple-50 text-purple-700 border-purple-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      className={`py-2.5 px-3 rounded-control text-sm font-medium transition-all border ${
+                        filters.propertyFor === type ? 'bg-brand-50 text-brand-700 border-brand-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                       }`}
                     >
                       {type}
@@ -687,14 +722,14 @@ export default function PropertyFeed() {
                     placeholder="Min Price"
                     value={filters.minPrice}
                     onChange={(e) => setFilters(prev => ({ ...prev, minPrice: e.target.value }))}
-                    className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-control focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   />
                   <input
                     type="number"
                     placeholder="Max Price"
                     value={filters.maxPrice}
                     onChange={(e) => setFilters(prev => ({ ...prev, maxPrice: e.target.value }))}
-                    className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-control focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -706,8 +741,8 @@ export default function PropertyFeed() {
                     <button
                       key={furnish}
                       onClick={() => setFilters(prev => ({ ...prev, furnishing: prev.furnishing === furnish ? '' : furnish }))}
-                      className={`py-2 px-2 rounded-lg text-xs font-medium transition-all border ${
-                        filters.furnishing === furnish ? 'bg-purple-50 text-purple-700 border-purple-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      className={`py-2 px-2 rounded-control text-xs font-medium transition-all border ${
+                        filters.furnishing === furnish ? 'bg-brand-50 text-brand-700 border-brand-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                       }`}
                     >
                       {furnish}
@@ -718,12 +753,12 @@ export default function PropertyFeed() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Additional Features</label>
-                <label className="flex items-center gap-2.5 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border border-gray-200">
+                <label className="flex items-center gap-2.5 p-3 bg-gray-50 rounded-control cursor-pointer hover:bg-gray-100 transition-colors border border-gray-200">
                   <input
                     type="checkbox"
                     checked={filters.parking}
                     onChange={(e) => setFilters(prev => ({ ...prev, parking: e.target.checked }))}
-                    className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500 border-gray-300"
+                    className="w-4 h-4 text-brand-600 rounded focus:ring-brand-500 border-gray-300"
                   />
                   <span className="text-sm font-medium text-gray-700">Parking Available</span>
                 </label>
@@ -733,14 +768,13 @@ export default function PropertyFeed() {
             <div className="sticky bottom-0 bg-white border-t border-gray-200 px-5 py-4 flex gap-3">
               <button
                 onClick={clearFilters}
-                className="flex-1 py-2.5 px-4 rounded-lg border border-gray-300 text-gray-700 font-medium text-sm hover:bg-gray-50 transition-colors"
+                className="flex-1 py-2.5 px-4 rounded-control border border-gray-300 text-gray-700 font-medium text-sm hover:bg-gray-50 transition-colors"
               >
                 Clear All
               </button>
               <button
                 onClick={applyFilters}
-                className="flex-1 py-2.5 px-4 rounded-lg text-white font-medium text-sm transition-colors"
-                style={{ backgroundColor: '#7C01A2' }}
+                className="flex-1 py-2.5 px-4 rounded-control text-white font-medium text-sm transition-colors bg-brand-500 hover:bg-brand-700"
               >
                 Apply Filters
               </button>
@@ -749,7 +783,7 @@ export default function PropertyFeed() {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .scrollbar-hide::-webkit-scrollbar {
           display: none;
         }

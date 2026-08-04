@@ -1,13 +1,24 @@
 import axios from 'axios';
 
 // Base API URL - Update this to your backend URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8005';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+});
+
+// Attach the stored session token, if any, to every request. Simplified
+// session model (see Town_X-BE/auth.py) — one long-lived token in
+// localStorage, no refresh rotation.
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('townx_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 // Properties API
@@ -91,6 +102,17 @@ export const propertyAPI = {
       return response.data;
     } catch (error) {
       console.error('Error fetching category stats:', error);
+      throw error;
+    }
+  },
+
+  // Get properties listed by the logged-in user (owner dashboard)
+  getMyProperties: async (skip = 0, limit = 100) => {
+    try {
+      const response = await api.get('/api/properties/mine', { params: { skip, limit } });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching my properties:', error);
       throw error;
     }
   },

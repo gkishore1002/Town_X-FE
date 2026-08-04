@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { X, Heart, Send, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
+import { motion, useReducedMotion } from 'motion/react';
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8005';
 
 export default function StoryViewer() {
   const { id } = useParams();
   const navigate = useNavigate();
-  
+  const shouldReduceMotion = useReducedMotion();
+
   const [story, setStory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -66,11 +68,11 @@ export default function StoryViewer() {
     const now = new Date();
     const created = new Date(timestamp);
     const diff = now - created;
-    
+
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
-    
+
     if (days > 0) return `${days}d ago`;
     if (hours > 0) return `${hours}h ago`;
     if (minutes > 0) return `${minutes}m ago`;
@@ -81,12 +83,12 @@ export default function StoryViewer() {
     const now = new Date();
     const expiry = new Date(expiresAt);
     const diff = expiry - now;
-    
+
     if (diff <= 0) return 'Expired';
-    
+
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    
+
     if (hours > 0) return `${hours}h ${minutes}m left`;
     return `${minutes}m left`;
   };
@@ -110,7 +112,7 @@ export default function StoryViewer() {
           <p className="text-gray-300 mb-6">{error}</p>
           <button
             onClick={handleClose}
-            className="px-6 py-3 bg-white text-black rounded-lg hover:bg-gray-200 transition-colors font-semibold"
+            className="px-6 py-3 bg-white text-black rounded-control hover:bg-gray-200 transition-colors font-semibold shadow-soft-sm"
           >
             Go Back
           </button>
@@ -120,10 +122,15 @@ export default function StoryViewer() {
   }
 
   return (
-    <div className="fixed inset-0 bg-black z-50">
+    <motion.div
+      className="fixed inset-0 bg-black z-50"
+      initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 1.02 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+    >
       {/* Progress Bar */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gray-700 z-10">
-        <div 
+        <div
           className="h-full bg-white transition-all duration-50 ease-linear"
           style={{ width: `${progress}%` }}
         />
@@ -134,12 +141,12 @@ export default function StoryViewer() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1">
             {/* Profile Picture Placeholder */}
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-500 to-brand-800 flex items-center justify-center shadow-soft-sm">
               <span className="text-white font-bold text-sm">
                 {story.user_id ? story.user_id.charAt(0).toUpperCase() : 'U'}
               </span>
             </div>
-            
+
             <div className="flex-1">
               <p className="text-white font-semibold text-sm">
                 {story.user_id || 'Anonymous'}
@@ -161,7 +168,7 @@ export default function StoryViewer() {
       </div>
 
       {/* Story Content */}
-      <div 
+      <div
         className="absolute inset-0 flex items-center justify-center"
         onClick={togglePause}
       >
@@ -239,7 +246,9 @@ export default function StoryViewer() {
       </div>
 
       {/* Navigation Arrows (Desktop) */}
-      <button
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
         onClick={(e) => {
           e.stopPropagation();
           navigate(-1);
@@ -247,7 +256,7 @@ export default function StoryViewer() {
         className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 items-center justify-center rounded-full bg-black/30 hover:bg-black/50 backdrop-blur-sm transition-colors"
       >
         <ChevronLeft size={28} className="text-white" />
-      </button>
-    </div>
+      </motion.button>
+    </motion.div>
   );
 }
