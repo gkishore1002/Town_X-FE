@@ -130,7 +130,7 @@ You should see something like:
 ```
   VITE v7.x.x  ready in xxx ms
 
-  ➜  Local:   http://localhost:5173/
+  ➜  Local:   http://localhost:5175/
 ```
 
 **Keep this terminal open.**
@@ -139,7 +139,7 @@ You should see something like:
 
 ## Step 5: Open the app and check it works
 
-1. Open http://localhost:5173 in your browser
+1. Open http://localhost:5175 in your browser
 2. The landing page should load
 3. Press **F12** to open DevTools → go to the **Network** tab
 4. Refresh the page
@@ -167,7 +167,7 @@ npm run dev
 ## Other useful commands
 
 ```bash
-npm run dev       # Start dev server (http://localhost:5173)
+npm run dev       # Start dev server (http://localhost:5175)
 npm run build     # Build for production → creates dist/ folder
 npm run preview   # Preview the production build locally
 npm run lint      # Check code with ESLint
@@ -202,8 +202,8 @@ The build embeds `VITE_API_URL` at build time — changing `.env` after `npm run
 **Changed `.env` but nothing changed**  
 → Stop the dev server (`Ctrl+C`) and run `npm run dev` again.
 
-**Port 5173 already in use**  
-→ Run on another port: `npm run dev -- --port 5174`
+**Port 5175 already in use**  
+→ Run on another port: `npm run dev -- --port 5176`
 
 ---
 

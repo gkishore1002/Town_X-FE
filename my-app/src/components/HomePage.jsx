@@ -41,7 +41,7 @@ import { TownExchangeLogo, APP_NAME } from "@/components/brand/TownExchangeLogo"
 import TownLoader from "@/components/shared/TownLoader";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:8002";
+  import.meta.env.VITE_API_URL || "http://localhost:8005";
 
 const APP_LOCATION = "Chennai, India";
 

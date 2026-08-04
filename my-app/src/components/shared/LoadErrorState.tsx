@@ -20,7 +20,7 @@ export function LoadErrorState({
 }: LoadErrorStateProps) {
   const Icon = isNetworkError(error) ? WifiOff : AlertCircle;
   const hint = isNetworkError(error)
-    ? "Make sure the backend is running on port 8002."
+    ? "Make sure the backend is running on port 8005."
     : isServerError(error)
       ? "Our servers hit a snag — retrying usually fixes this."
       : null;

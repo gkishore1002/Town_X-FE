@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Base API URL - Update this to your backend URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8005';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
