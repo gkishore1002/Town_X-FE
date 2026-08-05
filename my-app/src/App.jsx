@@ -2,6 +2,10 @@ import { lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 import DynamicLandingPage from "./components/DynamicLandingPage";
+import AboutUsPage from "@/components/legal/AboutUsPage";
+import TermsPage from "@/components/legal/TermsPage";
+import PrivacyPage from "@/components/legal/PrivacyPage";
+import FaqsPage from "@/components/legal/FaqsPage";
 import { AuthRouteRedirect } from "./components/auth/AuthRouteRedirect";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { AuthDrawerProvider } from "@/context/AuthDrawerContext";
@@ -25,6 +29,10 @@ function App() {
       <AuthDrawerProvider>
         <Routes>
           <Route path="/" element={<DynamicLandingPage />} />
+          <Route path="/about" element={<AboutUsPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/faqs" element={<FaqsPage />} />
           <Route path="/login" element={<AuthRouteRedirect mode="login" />} />
           <Route path="/signup" element={<AuthRouteRedirect mode="signup" />} />
 

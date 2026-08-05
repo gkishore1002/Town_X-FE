@@ -1,0 +1,88 @@
+import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
+import { ArrowLeft, Users2 } from "lucide-react";
+
+import { TownExchangeLogo, APP_NAME } from "@/components/brand/TownExchangeLogo";
+import { FooterLinks } from "@/components/legal/FooterLinks";
+
+const STACK_RACK_TAG = "A Stack Rack product";
+
+export function LegalPageLayout({
+  title,
+  subtitle,
+  lastUpdated,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  lastUpdated?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="min-h-screen bg-[#f7f8fa] text-gray-900 overflow-x-hidden">
+      <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/90 backdrop-blur-xl safe-top">
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3">
+          <Link
+            to="/"
+            className="flex min-w-0 items-center gap-2.5 hover:opacity-85 transition-opacity"
+          >
+            <TownExchangeLogo size={32} />
+            <span className="font-display truncate text-sm font-semibold text-gray-800">
+              {APP_NAME}
+            </span>
+          </Link>
+          <Link
+            to="/"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-control px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+          >
+            <ArrowLeft className="size-3.5" />
+            Back to home
+          </Link>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-4xl px-4 py-8 sm:py-12">
+        <div className="mb-8">
+          <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-[10px] font-medium tracking-wide text-gray-500 sm:text-xs">
+            {STACK_RACK_TAG}
+          </span>
+          <h1 className="mt-4 font-display text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl">
+            {title}
+          </h1>
+          {subtitle && (
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-gray-600 sm:text-base">
+              {subtitle}
+            </p>
+          )}
+          {lastUpdated && (
+            <p className="mt-2 text-xs text-gray-400">Last updated: {lastUpdated}</p>
+          )}
+        </div>
+
+        <article className="rounded-card border border-gray-100 bg-white p-5 shadow-soft-sm sm:p-8 md:p-10 legal-prose">
+          {children}
+        </article>
+      </main>
+
+      <footer className="border-t border-gray-200 bg-white/80">
+        <div className="mx-auto max-w-4xl px-4 py-8">
+          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+            <div className="flex items-center gap-2.5">
+              <TownExchangeLogo size={28} />
+              <span className="font-display text-sm font-semibold text-gray-800">{APP_NAME}</span>
+            </div>
+            <FooterLinks />
+          </div>
+          <div className="mt-6 flex items-center justify-center gap-1.5 border-t border-gray-200 pt-6 text-xs text-gray-500">
+            <Users2 className="size-3.5" />
+            <span>
+              &copy; {new Date().getFullYear()} {APP_NAME}. Built for Chennai, by Chennai.
+            </span>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+export default LegalPageLayout;

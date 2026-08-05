@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, MapPin, Bed, Bath, Square, Heart, Phone, RotateCcw, SlidersHorizontal, ChevronRight, ChevronLeft, Home, X } from 'lucide-react';
-import TinderCard from 'react-tinder-card';
+import { motion, useReducedMotion } from 'motion/react';
 import { propertyAPI } from '../services/api';
 import { PropertyCard } from './PropertyCard';
 import { getApiErrorMessage } from '@/lib/apiErrors';
 import LoadErrorState from "@/components/shared/LoadErrorState";
 import TownLoader from "@/components/shared/TownLoader";
+import { MobileSwipeDeck } from '@/components/property/MobileSwipeDeck';
 
 import { TownExchangeBrand, TownExchangeLogo } from './brand/TownExchangeLogo';
 
@@ -23,16 +24,12 @@ export default function PropertyFeed() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [swipedCards, setSwipedCards] = useState([]);
+  const [restoreDirection, setRestoreDirection] = useState(null);
   const [showComingSoon, setShowComingSoon] = useState(false);
 
   const currentIndexRef = useRef(currentIndex);
-  const childRefs = useMemo(
-    () =>
-      Array(properties.length)
-        .fill(0)
-        .map(() => React.createRef()),
-    [properties.length]
-  );
+  const swipeDeckRef = useRef(null);
+  const reduceMotion = useReducedMotion() ?? false;
 
   const [sortBy, setSortBy] = useState('recent');
   const [filters, setFilters] = useState({
@@ -233,34 +230,34 @@ export default function PropertyFeed() {
   };
 
   const onCardLeftScreen = (direction, property, index) => {
-    console.log(property.id + ' left the screen to ' + direction);
     setSwipedCards(prev => [...prev, { property, index, direction }]);
     setCurrentIndex(prev => prev - 1);
+    setRestoreDirection(null);
+
+    if (direction === 'right' && property?.id) {
+      handleSaveProperty(property.id);
+    }
   };
 
   const resetCards = () => {
     setCurrentIndex(properties.length - 1);
     setSwipedCards([]);
+    setRestoreDirection(null);
   };
 
-  const goBack = async () => {
+  const goBack = () => {
     if (swipedCards.length === 0) return;
 
     const lastSwiped = swipedCards[swipedCards.length - 1];
-    const newIndex = lastSwiped.index;
-
-    setCurrentIndex(newIndex);
+    setRestoreDirection(lastSwiped.direction);
+    setCurrentIndex(lastSwiped.index);
     setSwipedCards(prev => prev.slice(0, -1));
-
-    if (childRefs[newIndex] && childRefs[newIndex].current) {
-      await childRefs[newIndex].current.restoreCard();
-    }
   };
 
   const MobileSwipeCard = ({ property, isSwipeable = false }) => (
     <div
       className={`bg-white rounded-card shadow-soft-sm border border-gray-100 hover:shadow-soft-lg overflow-hidden flex flex-col transition-all duration-200 ${
-        isSwipeable ? 'h-[min(calc(100dvh-16rem),520px)]' : 'hover:-translate-y-1'
+        isSwipeable ? 'h-[min(calc(100dvh-18rem),500px)]' : 'hover:-translate-y-1'
       }`}
     >
       <div
@@ -530,84 +527,113 @@ export default function PropertyFeed() {
             <p className="text-gray-500 text-sm mt-2">Try adjusting your filters or search criteria</p>
           </div>
         ) : isMobile ? (
-          /* Mobile: Tinder Card View */
           <div className="relative">
             {currentIndex < 0 ? (
-              /* No More Cards Screen */
-              <div className="flex flex-col items-center justify-center h-[min(calc(100dvh-16rem),520px)]">
+              <motion.div
+                initial={reduceMotion ? false : { opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center justify-center h-[min(calc(100dvh-16rem),520px)]"
+              >
                 <div className="text-center p-6">
-                  <div className="w-20 h-20 mx-auto mb-4 bg-brand-50 rounded-full flex items-center justify-center">
+                  <motion.div
+                    animate={reduceMotion ? undefined : { rotate: [0, 8, -8, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 2 }}
+                    className="w-20 h-20 mx-auto mb-4 bg-brand-50 rounded-full flex items-center justify-center"
+                  >
                     <TownExchangeLogo size={48} />
-                  </div>
+                  </motion.div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
                     No More Properties
                   </h3>
                   <p className="text-gray-600 text-sm mb-6">
-                    You've viewed all available properties
+                    You&apos;ve viewed all available properties
                   </p>
-                  <button
+                  <motion.button
+                    whileTap={reduceMotion ? undefined : { scale: 0.97 }}
                     onClick={resetCards}
                     className="px-6 py-2.5 rounded-control text-white font-medium text-sm transition-all shadow-soft-md hover:shadow-brand-glow flex items-center justify-center gap-2 mx-auto bg-brand-500 hover:bg-brand-700"
                   >
                     <RotateCcw size={18} />
                     <span>View Again</span>
-                  </button>
+                  </motion.button>
                 </div>
-              </div>
+              </motion.div>
             ) : (
               <>
-                <div className="relative h-[min(calc(100dvh-16rem),520px)] flex items-center justify-center">
-                  {properties.map((property, index) => (
-                    <TinderCard
-                      ref={childRefs[index]}
-                      key={property.id}
-                      onCardLeftScreen={(dir) => onCardLeftScreen(dir, property, index)}
-                      preventSwipe={['up', 'down']}
-                      className="absolute w-full max-w-md"
-                      flickOnSwipe={true}
-                      swipeRequirementType="position"
-                      swipeThreshold={100}
-                    >
-                      <div style={{
-                        display: index <= currentIndex && index > currentIndex - 3 ? 'block' : 'none',
-                        transform: index < currentIndex ? `scale(${1 - (currentIndex - index) * 0.05})` : 'scale(1)',
-                        opacity: index < currentIndex ? 1 - (currentIndex - index) * 0.3 : 1
-                      }}>
-                        <MobileSwipeCard property={property} isSwipeable={true} />
-                      </div>
-                    </TinderCard>
-                  ))}
+                <div className="relative h-[min(calc(100dvh-16rem),520px)] flex items-start justify-center pt-2">
+                  <MobileSwipeDeck
+                    ref={swipeDeckRef}
+                    properties={properties}
+                    topIndex={currentIndex}
+                    restoreDirection={restoreDirection}
+                    onSwipe={onCardLeftScreen}
+                    className="h-full"
+                    renderCard={(property, isTop) => (
+                      <MobileSwipeCard property={property} isSwipeable={isTop} />
+                    )}
+                  />
                 </div>
 
-                {/* Card Counter */}
                 <div className="text-center mt-4">
                   <p className="text-sm text-gray-600 font-medium">
                     {currentIndex >= 0 ? properties.length - currentIndex : 0} of {properties.length}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">Swipe left or right to explore</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Swipe right to save · left to skip
+                  </p>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex justify-center gap-4 mt-6">
-                  <button
+                <div className="flex justify-center items-center gap-4 mt-6">
+                  <motion.button
+                    whileTap={reduceMotion ? undefined : { scale: 0.92 }}
                     onClick={goBack}
                     disabled={swipedCards.length === 0}
                     className={`w-12 h-12 rounded-full bg-white border border-gray-300 shadow-soft-md flex items-center justify-center transition-all ${
                       swipedCards.length === 0 ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-50 hover:shadow-soft-lg'
                     }`}
+                    aria-label="Undo last swipe"
                   >
                     <RotateCcw size={20} className="text-gray-600" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
+                  </motion.button>
+
+                  <motion.button
+                    whileTap={reduceMotion ? undefined : { scale: 0.9 }}
+                    onClick={() => swipeDeckRef.current?.swipe('left')}
+                    disabled={currentIndex < 0}
+                    className="w-14 h-14 rounded-full bg-white border-2 border-rose-200 shadow-soft-md flex items-center justify-center hover:bg-rose-50 transition-all"
+                    aria-label="Skip property"
+                  >
+                    <X size={24} className="text-rose-500" />
+                  </motion.button>
+
+                  <motion.button
+                    whileTap={reduceMotion ? undefined : { scale: 0.9 }}
+                    onClick={() => {
                       if (currentIndex >= 0) handleSaveProperty(properties[currentIndex].id);
                     }}
-                    className="w-14 h-14 rounded-full bg-white border border-gray-300 shadow-soft-md flex items-center justify-center hover:bg-gray-50 hover:shadow-soft-lg transition-all"
                     disabled={currentIndex < 0}
+                    className="w-12 h-12 rounded-full bg-white border border-gray-300 shadow-soft-md flex items-center justify-center hover:bg-gray-50 hover:shadow-soft-lg transition-all"
+                    aria-label="Toggle favourite"
                   >
-                    <Heart size={24} className="text-red-500" />
-                  </button>
+                    <Heart
+                      size={22}
+                      className={
+                        currentIndex >= 0 && properties[currentIndex]?.is_favourite
+                          ? 'fill-red-500 text-red-500'
+                          : 'text-red-500'
+                      }
+                    />
+                  </motion.button>
+
+                  <motion.button
+                    whileTap={reduceMotion ? undefined : { scale: 0.9 }}
+                    onClick={() => swipeDeckRef.current?.swipe('right')}
+                    disabled={currentIndex < 0}
+                    className="w-14 h-14 rounded-full bg-white border-2 border-emerald-200 shadow-soft-md flex items-center justify-center hover:bg-emerald-50 transition-all"
+                    aria-label="Save and next"
+                  >
+                    <Heart size={24} className="text-emerald-500 fill-emerald-500" />
+                  </motion.button>
                 </div>
               </>
             )}
